@@ -1,10 +1,9 @@
 import { useMemo } from "react";
-import { Box, Card, Code, Group, Image, Stack, Text } from "@mantine/core";
+import { Box, Card, Code, Group, Stack, Text } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import type { MatchRecord, Offer } from "../types";
 import { type Dir, fmtNum, fmtPrice, type SortKey, sortRecords } from "./matchSort";
-
-const FALLBACK = "https://placehold.co/300x200/141518/3a3a3a?text=brak+zdj%C4%99cia";
+import { PhotoBox } from "./PhotoBox";
 
 function specs(o: Offer): string[] {
   return [
@@ -37,8 +36,7 @@ function OfferCard({ rec, mobile }: { rec: MatchRecord; mobile: boolean }) {
       style={{ background: "var(--mantine-color-dark-6)", borderColor: "var(--mantine-color-dark-4)" }}
     >
       <Group align="flex-start" wrap="nowrap" gap="md">
-        <Image src={o.thumbnailUrl ?? undefined} w={mobile ? 104 : 150} h={mobile ? 78 : 100}
-          radius="md" fit="cover" fallbackSrc={FALLBACK} alt={o.title} />
+        <PhotoBox src={o.thumbnailUrl} alt={o.title} w={mobile ? 104 : 150} h={mobile ? 70 : 100} />
 
         {mobile ? (
           <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
