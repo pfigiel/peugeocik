@@ -12,6 +12,7 @@ import {
   Title,
 } from "@mantine/core";
 import type { Config, Criteria, Meta } from "../types";
+import { toOptions } from "../labels";
 
 interface Props {
   config: Config;
@@ -66,9 +67,9 @@ export function CriteriaForm({ config, meta, saving, onSave }: Props) {
         <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
           <TextInput label="Marka" placeholder="dowolna" value={c.make ?? ""} onChange={(e) => set("make", e.currentTarget.value || undefined)} />
           <TextInput label="Model" placeholder="dowolny" value={c.model ?? ""} onChange={(e) => set("model", e.currentTarget.value || undefined)} />
-          <MultiSelect label="Paliwo" data={[...meta.fuelTypes]} value={c.fuelTypes ?? []} onChange={(v) => set("fuelTypes", v.length ? v : undefined)} styles={pillStyles} clearable />
-          <MultiSelect label="Skrzynia" data={[...meta.gearbox]} value={c.gearbox ?? []} onChange={(v) => set("gearbox", v.length ? v : undefined)} styles={pillStyles} clearable />
-          <MultiSelect label="Nadwozie" data={[...meta.bodyTypes]} value={c.bodyTypes ?? []} onChange={(v) => set("bodyTypes", v.length ? v : undefined)} styles={pillStyles} clearable />
+          <MultiSelect label="Paliwo" data={toOptions(meta.fuelTypes)} value={c.fuelTypes ?? []} onChange={(v) => set("fuelTypes", v.length ? v : undefined)} styles={pillStyles} clearable />
+          <MultiSelect label="Skrzynia" data={toOptions(meta.gearbox)} value={c.gearbox ?? []} onChange={(v) => set("gearbox", v.length ? v : undefined)} styles={pillStyles} clearable />
+          <MultiSelect label="Nadwozie" data={toOptions(meta.bodyTypes)} value={c.bodyTypes ?? []} onChange={(v) => set("bodyTypes", v.length ? v : undefined)} styles={pillStyles} clearable />
         </SimpleGrid>
       </Section>
 

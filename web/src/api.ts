@@ -14,10 +14,12 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init.body ? { "Content-Type": "application/json" } : {}),
     },
+  }).catch(() => {
+    throw new Error("Nie udało się połączyć z serwerem");
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `HTTP ${res.status}`);
+    throw new Error(body.error ?? `Błąd serwera (HTTP ${res.status})`);
   }
   return res.json() as Promise<T>;
 }

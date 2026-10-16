@@ -32,7 +32,7 @@ export class Monitor {
         const portal = this.portals.get(portalName);
         if (!portal) {
           console.warn(`[${search.name}] unknown portal "${portalName}", skipping`);
-          results.push({ searchName: search.name, portal: portalName, scraped: 0, matched: 0, new: 0, error: "unknown portal" });
+          results.push({ searchName: search.name, portal: portalName, scraped: 0, matched: 0, new: 0, error: "nieznany portal" });
           continue;
         }
 

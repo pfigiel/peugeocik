@@ -1,8 +1,8 @@
 # peugeocik
 
 Bot monitoring car sale offers on Polish portals. Scrapes periodically, filters
-by your criteria, notifies on new matches, and shows them in a web UI. Starts
-with **otomoto**.
+by your criteria, notifies on new matches, and shows them in a web UI.
+Providers: **otomoto** (embedded `__NEXT_DATA__`) and **olx** (public JSON API).
 
 ## Setup
 
@@ -105,3 +105,15 @@ No browser needed. otomoto (Next.js) embeds listings server-side in the
 `advertSearch.edges[].node` (including the default photo `thumbnail`).
 `parse.ts` extracts them, `url.ts` builds the filtered search URL, `otomoto.ts`
 paginates (capped) politely.
+
+### olx scraping
+
+OLX exposes a public JSON API (`/api/v1/offers/`, cars `category_id=199`).
+Filters map to `filter_float_*` / `filter_enum_*` params; location uses
+`city_id` + `distance` (a small city→id map, Gliwice seeded). OLX fuel values
+(`plugin-hybrid`, `lpg`, …) and body types are normalized to the shared
+vocabulary so the matcher works across portals. Adapter: `olx.ts`
+(Node `src/portals/olx/`, Deno `supabase/functions/_shared/olx.ts`).
+
+Each offer's `uid` is prefixed by portal (`otomoto:…`, `olx:…`), so results
+dedupe and archive independently across providers.

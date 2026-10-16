@@ -115,7 +115,7 @@ export async function createApp(configPath: string, webDir: string): Promise<htt
       }
 
       if (path === "/api/scan" && method === "POST") {
-        if (state.scanning) return send(res, 409, { error: "scan already running" });
+        if (state.scanning) return send(res, 409, { error: "Skanowanie już trwa" });
         state.scanning = true;
         try {
           const results = await runScan(state);
@@ -126,7 +126,7 @@ export async function createApp(configPath: string, webDir: string): Promise<htt
       }
 
       if (path.startsWith("/api/")) {
-        return send(res, 404, { error: "unknown endpoint" });
+        return send(res, 404, { error: "Nieznany endpoint" });
       }
 
       // Everything else: static frontend.

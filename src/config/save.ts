@@ -6,7 +6,7 @@ import { configSchema, type Config } from "./schema.js";
 export async function saveConfig(path: string, config: unknown): Promise<Config> {
   const result = configSchema.safeParse(config);
   if (!result.success) {
-    const err = new Error("Invalid config");
+    const err = new Error("Nieprawidłowa konfiguracja");
     (err as Error & { details?: unknown }).details = result.error.format();
     throw err;
   }

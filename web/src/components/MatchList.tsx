@@ -4,6 +4,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import type { MatchRecord, Offer } from "../types";
 import { type Dir, fmtNum, fmtPrice, type SortKey, sortRecords } from "./matchSort";
 import { PhotoBox } from "./PhotoBox";
+import { label } from "../labels";
 
 function specs(o: Offer): string[] {
   return [
@@ -11,8 +12,8 @@ function specs(o: Offer): string[] {
     fmtNum(o.mileageKm, " km"),
     fmtNum(o.enginePowerHp, " KM"),
     fmtNum(o.engineCapacityCm3, " cm³"),
-    o.fuelType,
-    o.gearbox,
+    o.fuelType && label(o.fuelType),
+    o.gearbox && label(o.gearbox),
   ].filter((s): s is string => !!s && s !== "—");
 }
 

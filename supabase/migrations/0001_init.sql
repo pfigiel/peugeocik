@@ -34,7 +34,7 @@ values (
     "searches": [
       {
         "name": "small-petrol-manual-gliwice",
-        "portals": ["otomoto"],
+        "portals": ["otomoto", "olx"],
         "criteria": {
           "priceMax": 30000,
           "yearMin": 2015,

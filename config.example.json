@@ -4,7 +4,7 @@
   "searches": [
     {
       "name": "small-petrol-manual-gliwice",
-      "portals": ["otomoto"],
+      "portals": ["otomoto", "olx"],
       "criteria": {
         "make": "peugeot",
         "model": "2008",
