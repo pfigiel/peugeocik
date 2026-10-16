@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { configSchema } from "../_shared/schema.ts";
-import { filterOffers } from "../_shared/matcher.ts";
+import { filterOffers, matches } from "../_shared/matcher.ts";
 import { searchOtomoto } from "../_shared/otomoto.ts";
 import { searchOlx } from "../_shared/olx.ts";
 import { type NewOffersBySearch, sendNewOffersEmail } from "../_shared/email.ts";
@@ -46,6 +46,12 @@ async function readConfig(db: SupabaseClient): Promise<Config> {
   const { data, error } = await db.from("app_config").select("config").eq("id", 1).single();
   if (error) throw new Error(error.message);
   return data.config as Config;
+}
+
+/** True if the offer satisfies at least one current search. Stored matches that
+ *  no longer do stay in the DB (so a later scan won't re-notify), just hidden. */
+function matchesConfig(offer: Offer, config: Config): boolean {
+  return config.searches.some((s) => s.portals.includes(offer.portal) && matches(offer, s.criteria));
 }
 
 async function persistMatches(
@@ -154,12 +160,13 @@ Deno.serve(async (req) => {
     }
 
     if (path === "/matches" && method === "GET") {
+      const config = await readConfig(admin);
       const { data, error } = await admin
         .from("matches")
         .select("offer, search_name, first_seen_at, last_seen_at, archived")
         .order("first_seen_at", { ascending: false });
       if (error) return json(500, { error: error.message });
-      const records = (data ?? []).map((r) => ({
+      const records = (data ?? []).filter((r) => matchesConfig(r.offer as Offer, config)).map((r) => ({
         offer: r.offer,
         searchName: r.search_name,
         firstSeenAt: r.first_seen_at,

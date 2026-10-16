@@ -50,6 +50,7 @@ export function App({ session }: { session: Session }) {
     setError(null);
     try {
       setConfig(await api.saveConfig(next));
+      setMatches(await api.getMatches()); // re-prune view against new criteria
     } catch (e) {
       setError((e as Error).message);
     } finally {

@@ -4,6 +4,7 @@ import { extname, join, normalize } from "node:path";
 import { loadConfig } from "../config/load.js";
 import { saveConfig } from "../config/save.js";
 import type { Config } from "../config/schema.js";
+import { matches } from "../core/matcher.js";
 import { Monitor, type ScanResult } from "../core/monitor.js";
 import { MatchStore } from "../core/store.js";
 import { BODY_TYPE_OPTIONS, FUEL_OPTIONS, GEARBOX_OPTIONS } from "../core/options.js";
@@ -111,7 +112,12 @@ export async function createApp(configPath: string, webDir: string): Promise<htt
       }
 
       if (path === "/api/matches" && method === "GET") {
-        return send(res, 200, state.store.getAll());
+        // Hide stored matches no current search accepts; keep them in the store so
+        // a later scan still treats them as seen and won't re-notify.
+        const visible = state.store.getAll().filter((r) =>
+          state.config.searches.some((s) => s.portals.includes(r.offer.portal) && matches(r.offer, s.criteria)),
+        );
+        return send(res, 200, visible);
       }
 
       if (path === "/api/scan" && method === "POST") {
