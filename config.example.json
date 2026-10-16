@@ -1,0 +1,31 @@
+{
+  "intervalMinutes": 30,
+  "matchStorePath": "./data/matches.json",
+  "searches": [
+    {
+      "name": "small-petrol-manual-gliwice",
+      "portals": ["otomoto"],
+      "criteria": {
+        "make": "peugeot",
+        "model": "2008",
+        "priceMin": 0,
+        "priceMax": 30000,
+        "yearMin": 2015,
+        "yearMax": 2026,
+        "mileageMax": 120000,
+        "engineCapacityMin": 1199,
+        "enginePowerMin": 80,
+        "fuelTypes": ["petrol", "hybrid", "diesel", "petrol-lpg", "electric"],
+        "gearbox": ["manual", "automatic"],
+        "bodyTypes": ["city-cars", "compact", "small-cars", "sedan", "station-wagon", "suv", "coupe", "minivan", "cabriolet"],
+        "excludeDamaged": true,
+        "registeredInPL": true,
+        "location": { "city": "Gliwice", "radiusKm": 50 }
+      }
+    }
+  ],
+  "notifiers": [
+    { "type": "console" },
+    { "type": "markdown", "path": "./data/matches.md" }
+  ]
+}

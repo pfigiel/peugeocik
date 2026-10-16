@@ -1,0 +1,8 @@
+# Supabase project config. `project_id` is set when you link the project
+# (npx supabase link --project-ref <ref>); the CLI may rewrite this file.
+project_id = "pnskqbenbgqcoeqhzqwf"
+
+[functions.api]
+# We enforce auth inside the function (Supabase Auth user JWT, or cron secret),
+# so the gateway JWT check is off — this also lets CORS preflight through.
+verify_jwt = false

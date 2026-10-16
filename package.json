@@ -1,0 +1,25 @@
+{
+  "name": "peugeocik",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bot monitoring car sale offers on Polish portals (otomoto, ...).",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "once": "tsx src/index.ts --once",
+    "serve": "tsx src/server/index.ts",
+    "dev": "npm --prefix web run dev",
+    "dev:local": "concurrently -k -n api,web -c cyan,green \"npm run serve\" \"npm --prefix web run dev\"",
+    "web:install": "npm --prefix web install",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

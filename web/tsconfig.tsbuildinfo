@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/login.tsx","./src/api.ts","./src/main.tsx","./src/supabase.ts","./src/types.ts","./src/vite-env.d.ts","./src/components/criteriaform.tsx","./src/components/matchestable.tsx","./vite.config.ts"],"version":"5.6.3"}
