@@ -15,21 +15,23 @@ export function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setError(error.message);
     setLoading(false);
-    // On success, onAuthStateChange in Root swaps to the app.
   };
 
   return (
-    <Center mih="100vh" p="md">
-      <Paper withBorder radius="md" p="xl" w={360} component="form" onSubmit={submit}>
-        <Stack>
-          <div>
-            <Title order={3}>🚗 peugeocik</Title>
+    <Center mih="100dvh" p="md">
+      <Paper withBorder radius="lg" p="xl" w="100%" maw={380} component="form" onSubmit={submit} shadow="md">
+        <Stack gap="lg">
+          <Stack gap={4} align="center">
+            <Text fz={44} lh={1}>🚗</Text>
+            <Title order={3}>peugeocik</Title>
             <Text c="dimmed" size="sm">Sign in to view car offers</Text>
-          </div>
-          {error && <Alert color="red">{error}</Alert>}
-          <TextInput label="Email" type="email" required value={email} onChange={(e) => setEmail(e.currentTarget.value)} autoComplete="username" />
-          <PasswordInput label="Password" required value={password} onChange={(e) => setPassword(e.currentTarget.value)} autoComplete="current-password" />
-          <Button type="submit" loading={loading} fullWidth>Sign in</Button>
+          </Stack>
+          {error && <Alert color="red" variant="light">{error}</Alert>}
+          <TextInput label="Email" type="email" required size="md" value={email}
+            onChange={(e) => setEmail(e.currentTarget.value)} autoComplete="username" />
+          <PasswordInput label="Password" required size="md" value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)} autoComplete="current-password" />
+          <Button type="submit" loading={loading} fullWidth size="md" mt="xs">Sign in</Button>
         </Stack>
       </Paper>
     </Center>

@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { Center, Loader, MantineProvider } from "@mantine/core";
+import { Center, createTheme, Loader, MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { App } from "./App";
 import { Login } from "./Login";
+
+const theme = createTheme({
+  primaryColor: "indigo",
+  defaultRadius: "md",
+});
 
 function Root() {
   const [session, setSession] = useState<Session | null>(null);
@@ -27,7 +32,7 @@ function Root() {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <MantineProvider defaultColorScheme="auto">
+    <MantineProvider theme={theme} forceColorScheme="dark">
       <Root />
     </MantineProvider>
   </React.StrictMode>,
