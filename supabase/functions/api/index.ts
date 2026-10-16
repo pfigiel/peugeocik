@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     if (path === "/matches" && method === "GET") {
       const { data, error } = await admin
         .from("matches")
-        .select("offer, search_name, first_seen_at, last_seen_at")
+        .select("offer, search_name, first_seen_at, last_seen_at, archived")
         .order("first_seen_at", { ascending: false });
       if (error) return json(500, { error: error.message });
       const records = (data ?? []).map((r) => ({
@@ -147,8 +147,17 @@ Deno.serve(async (req) => {
         searchName: r.search_name,
         firstSeenAt: r.first_seen_at,
         lastSeenAt: r.last_seen_at,
+        archived: r.archived ?? false,
       }));
       return json(200, records);
+    }
+
+    if (path === "/archive" && method === "POST") {
+      const body = await req.json().catch(() => ({})) as { uid?: string; archived?: boolean };
+      if (!body.uid || typeof body.archived !== "boolean") return json(400, { error: "uid and archived required" });
+      const { error } = await admin.from("matches").update({ archived: body.archived }).eq("uid", body.uid);
+      if (error) return json(500, { error: error.message });
+      return json(200, { uid: body.uid, archived: body.archived });
     }
 
     if (path === "/scan" && method === "POST") {

@@ -53,6 +53,7 @@ export interface MatchRecord {
   searchName: string;
   firstSeenAt: string;
   lastSeenAt: string;
+  archived: boolean;
 }
 
 export interface Meta {

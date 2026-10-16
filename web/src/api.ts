@@ -28,4 +28,6 @@ export const api = {
   saveConfig: (config: Config) => call<Config>("/config", { method: "PUT", body: JSON.stringify(config) }),
   getMatches: () => call<MatchRecord[]>("/matches"),
   scan: () => call<{ results: ScanResult[] }>("/scan", { method: "POST" }),
+  archive: (uid: string, archived: boolean) =>
+    call<{ uid: string; archived: boolean }>("/archive", { method: "POST", body: JSON.stringify({ uid, archived }) }),
 };

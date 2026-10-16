@@ -57,6 +57,18 @@ export function App({ session }: { session: Session }) {
     }
   };
 
+  const archive = async (uid: string, archived: boolean) => {
+    const apply = (val: boolean) =>
+      setMatches((prev) => prev.map((r) => (r.offer.uid === uid ? { ...r, archived: val } : r)));
+    apply(archived); // optimistic
+    try {
+      await api.archive(uid, archived);
+    } catch (e) {
+      apply(!archived); // revert
+      setError((e as Error).message);
+    }
+  };
+
   const scan = async () => {
     setScanning(true);
     setError(null);
@@ -136,7 +148,7 @@ export function App({ session }: { session: Session }) {
           </Group>
 
           <Tabs.Panel value="results">
-            <MatchList records={matches} sort={sort} dir={dir} />
+            <MatchList records={matches} sort={sort} dir={dir} onArchive={archive} />
           </Tabs.Panel>
 
           <Tabs.Panel value="criteria">
