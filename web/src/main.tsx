@@ -1,15 +1,35 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { Center, createTheme, Loader, MantineProvider } from "@mantine/core";
+import { Center, createTheme, Input, Loader, MantineColorsTuple, MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { App } from "./App";
 import { Login } from "./Login";
 
+const amber: MantineColorsTuple = [
+  "#fff8e8", "#ffefcb", "#ffdd9a", "#ffca64", "#ffba38", "#ffb01c",
+  "#ffab09", "#e39500", "#ca8400", "#af7100",
+];
+
+const dark: MantineColorsTuple = [
+  "#c9c9ca", "#b8b8b9", "#8d8d8f", "#5c5c5f", "#26272b",
+  "#1b1c20", "#141518", "#0a0a0c", "#070709", "#050506",
+];
+
 const theme = createTheme({
-  primaryColor: "indigo",
+  primaryColor: "amber",
+  primaryShade: 5,
+  autoContrast: true,
+  luminanceThreshold: 0.35,
   defaultRadius: "md",
+  colors: { amber, dark },
+  fontFamilyMonospace: 'ui-monospace, "SFMono-Regular", "DM Mono", Menlo, Consolas, monospace',
+  components: {
+    Input: Input.extend({
+      styles: { input: { backgroundColor: "var(--mantine-color-dark-7)" } },
+    }),
+  },
 });
 
 function Root() {
@@ -25,7 +45,7 @@ function Root() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  if (!ready) return <Center mih="100vh"><Loader /></Center>;
+  if (!ready) return <Center mih="100dvh"><Loader /></Center>;
   if (!session) return <Login />;
   return <App session={session} />;
 }

@@ -4,11 +4,11 @@ export type SortKey = "firstSeenAt" | "price" | "year" | "mileageKm" | "enginePo
 export type Dir = "asc" | "desc";
 
 export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "firstSeenAt", label: "Found" },
-  { value: "price", label: "Price" },
-  { value: "year", label: "Year" },
-  { value: "mileageKm", label: "Mileage" },
-  { value: "enginePowerHp", label: "Power" },
+  { value: "firstSeenAt", label: "Dodano" },
+  { value: "price", label: "Cena" },
+  { value: "year", label: "Rok" },
+  { value: "mileageKm", label: "Przebieg" },
+  { value: "enginePowerHp", label: "Moc" },
 ];
 
 function value(r: MatchRecord, key: SortKey): number {

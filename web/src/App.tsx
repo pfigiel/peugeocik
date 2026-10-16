@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import {
+  ActionIcon,
   Alert,
   Badge,
-  Box,
   Button,
   Container,
   Group,
   Loader,
   Paper,
+  Select,
   Stack,
   Tabs,
   Text,
@@ -18,7 +19,9 @@ import { api } from "./api";
 import { supabase } from "./supabase";
 import type { Config, MatchRecord, Meta, ScanResult } from "./types";
 import { CriteriaForm } from "./components/CriteriaForm";
-import { MatchesView } from "./components/MatchesView";
+import { MatchList } from "./components/MatchList";
+import { Logo } from "./components/Logo";
+import { type Dir, type SortKey, SORT_OPTIONS } from "./components/matchSort";
 
 export function App({ session }: { session: Session }) {
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -29,6 +32,8 @@ export function App({ session }: { session: Session }) {
   const [lastScan, setLastScan] = useState<ScanResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<string | null>("results");
+  const [sort, setSort] = useState<SortKey>("firstSeenAt");
+  const [dir, setDir] = useState<Dir>("desc");
 
   useEffect(() => {
     Promise.all([api.getMeta(), api.getConfig(), api.getMatches()])
@@ -70,87 +75,81 @@ export function App({ session }: { session: Session }) {
   if (error && !config) {
     return (
       <Container py="xl">
-        <Alert color="red" title="Cannot reach backend">{error}</Alert>
+        <Alert color="red" title="Brak połączenia z backendem">{error}</Alert>
       </Container>
     );
   }
+  if (!meta || !config) return <Group justify="center" mt={120}><Loader /></Group>;
 
-  if (!meta || !config) {
-    return <Group justify="center" mt={120}><Loader /></Group>;
-  }
-
-  const newFound = lastScan?.reduce((s, r) => s + r.new, 0) ?? 0;
+  const portals = config.searches[0].portals.join(", ");
+  const lastScanText = lastScan
+    ? "Ostatni skan: " + lastScan.map((r) =>
+        r.error ? `${r.portal}: błąd` : `${r.portal} · ${r.scraped} pobrane · ${r.matched} dopasowane · ${r.new} nowych`,
+      ).join(" · ")
+    : "Jeszcze nie skanowano — kliknij „Skanuj teraz”.";
 
   return (
-    <>
-      <Box
-        component="header"
-        style={(t) => ({
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          background: "var(--mantine-color-dark-7)",
-          borderBottom: `1px solid ${t.colors.dark[4]}`,
-          backdropFilter: "blur(6px)",
-        })}
-      >
-        <Container size="lg" py="sm">
-          <Group justify="space-between" wrap="nowrap" gap="sm">
-            <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-              <Text fz={26} lh={1}>🚗</Text>
-              <div style={{ minWidth: 0 }}>
-                <Title order={4} lh={1.1}>peugeocik</Title>
-                <Text size="xs" c="dimmed" visibleFrom="xs">Car offer monitor</Text>
-              </div>
-            </Group>
-            <Group gap="xs" wrap="nowrap">
-              <Button onClick={scan} loading={scanning} size="sm">Scan now</Button>
-              <Text size="sm" c="dimmed" visibleFrom="md">{session.user.email}</Text>
-              <Button variant="subtle" color="gray" size="sm" onClick={() => supabase.auth.signOut()}>
-                Sign out
-              </Button>
-            </Group>
+    <Container size="lg" py="lg">
+      <Stack gap="lg">
+        {/* Header */}
+        <Group justify="space-between" wrap="nowrap" gap="sm">
+          <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+            <Logo />
+            <div style={{ minWidth: 0 }}>
+              <Title order={3} lh={1.1}>peugeocik</Title>
+              <Text size="sm" c="dimmed" lineClamp={1}>Monitor ofert samochodowych — {portals}</Text>
+            </div>
           </Group>
-        </Container>
-      </Box>
+          <Group gap="xs" wrap="nowrap">
+            <Badge color="amber" variant="light" size="lg" radius="sm" tt="none" visibleFrom="sm">{matches.length} ofert</Badge>
+            <Button onClick={scan} loading={scanning}>Skanuj teraz</Button>
+            <Text size="sm" c="dimmed" visibleFrom="lg">{session.user.email}</Text>
+            <Button variant="default" onClick={() => supabase.auth.signOut()} visibleFrom="sm">Wyloguj</Button>
+          </Group>
+        </Group>
 
-      <Container size="lg" py="lg">
-        <Stack gap="md">
-          {error && <Alert color="red" withCloseButton onClose={() => setError(null)}>{error}</Alert>}
-          {lastScan && (
-            <Alert color={newFound > 0 ? "teal" : "gray"} variant="light" withCloseButton onClose={() => setLastScan(null)}>
-              {newFound > 0 ? `${newFound} new offer(s) found. ` : "No new offers. "}
-              <Text span c="dimmed" size="sm">
-                {lastScan.map((r) => `${r.portal}: ${r.matched} match`).join(" · ")}
-              </Text>
-            </Alert>
-          )}
+        {/* Last-scan bar */}
+        <Paper radius="md" px="md" py="sm" style={{ background: "var(--mantine-color-dark-6)", border: "1px solid var(--mantine-color-dark-4)" }}>
+          <Text size="sm" c="dimmed">{lastScanText}</Text>
+        </Paper>
 
-          <Tabs value={tab} onChange={setTab} variant="default" keepMounted={false}>
-            <Tabs.List mb="md">
+        {error && <Alert color="red" withCloseButton onClose={() => setError(null)}>{error}</Alert>}
+
+        <Tabs value={tab} onChange={setTab} variant="pills" color="dark" keepMounted={false}>
+          <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
+            <Tabs.List>
               <Tabs.Tab value="results">
-                <Group gap="xs" wrap="nowrap">
-                  Results
-                  <Badge size="sm" variant="light" circle>{matches.length}</Badge>
-                </Group>
+                <Group gap={8} wrap="nowrap">Wyniki <Badge size="sm" color="amber" variant="light">{matches.length}</Badge></Group>
               </Tabs.Tab>
-              <Tabs.Tab value="criteria">Criteria</Tabs.Tab>
+              <Tabs.Tab value="criteria">Kryteria</Tabs.Tab>
             </Tabs.List>
 
-            <Tabs.Panel value="results">
-              <Paper withBorder radius="md" p={{ base: "xs", sm: "md" }}>
-                <MatchesView records={matches} />
-              </Paper>
-            </Tabs.Panel>
+            {tab === "results" && (
+              <Group gap="xs" wrap="nowrap">
+                <Text size="sm" c="dimmed">Sortuj</Text>
+                <Select w={150} data={SORT_OPTIONS} value={sort} onChange={(v) => v && setSort(v as SortKey)} allowDeselect={false} />
+                <ActionIcon size="lg" variant="default" onClick={() => setDir((d) => (d === "asc" ? "desc" : "asc"))} aria-label="Kierunek sortowania">
+                  {dir === "asc" ? "▲" : "▼"}
+                </ActionIcon>
+              </Group>
+            )}
+          </Group>
 
-            <Tabs.Panel value="criteria">
-              <Paper withBorder radius="md" p={{ base: "sm", sm: "md" }}>
-                <CriteriaForm config={config} meta={meta} saving={saving} onSave={save} />
-              </Paper>
-            </Tabs.Panel>
-          </Tabs>
-        </Stack>
-      </Container>
-    </>
+          <Tabs.Panel value="results">
+            <MatchList records={matches} sort={sort} dir={dir} />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="criteria">
+            <CriteriaForm config={config} meta={meta} saving={saving} onSave={save} />
+          </Tabs.Panel>
+        </Tabs>
+
+        {/* Footer (mobile sign-out) */}
+        <Group justify="space-between" hiddenFrom="sm" pt="md" style={{ borderTop: "1px solid var(--mantine-color-dark-4)" }}>
+          <Text size="sm" c="dimmed">{session.user.email}</Text>
+          <Button variant="default" size="sm" onClick={() => supabase.auth.signOut()}>Wyloguj</Button>
+        </Group>
+      </Stack>
+    </Container>
   );
 }
