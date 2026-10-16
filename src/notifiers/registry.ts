@@ -1,5 +1,6 @@
 import type { NotifierConfig } from "../config/schema.js";
 import { ConsoleNotifier } from "./console.js";
+import { EmailNotifier } from "./email.js";
 import { LogFileNotifier } from "./logfile.js";
 import { MarkdownNotifier } from "./markdown.js";
 import type { Notifier } from "./notifier.js";
@@ -14,6 +15,8 @@ export function buildNotifiers(configs: NotifierConfig[]): Notifier[] {
         return new LogFileNotifier(c.path);
       case "markdown":
         return new MarkdownNotifier(c.path);
+      case "email":
+        return new EmailNotifier();
     }
   });
 }

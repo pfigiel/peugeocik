@@ -3,6 +3,7 @@ import { configSchema } from "../_shared/schema.ts";
 import { filterOffers } from "../_shared/matcher.ts";
 import { searchOtomoto } from "../_shared/otomoto.ts";
 import { searchOlx } from "../_shared/olx.ts";
+import { type NewOffersBySearch, sendNewOffersEmail } from "../_shared/email.ts";
 import { BODY_TYPE_OPTIONS, FUEL_OPTIONS, GEARBOX_OPTIONS } from "../_shared/options.ts";
 import type { Config, Criteria, Offer, ScanResult } from "../_shared/types.ts";
 
@@ -51,8 +52,8 @@ async function persistMatches(
   db: SupabaseClient,
   offers: Offer[],
   searchName: string,
-): Promise<number> {
-  if (offers.length === 0) return 0;
+): Promise<Offer[]> {
+  if (offers.length === 0) return [];
   const uids = offers.map((o) => o.uid);
   const { data: existing } = await db.from("matches").select("uid").in("uid", uids);
   const known = new Set((existing ?? []).map((r) => r.uid as string));
@@ -76,12 +77,13 @@ async function persistMatches(
   if (knownUids.length > 0) {
     await db.from("matches").update({ last_seen_at: now }).in("uid", knownUids);
   }
-  return fresh.length;
+  return fresh;
 }
 
 async function runScan(db: SupabaseClient): Promise<ScanResult[]> {
   const config = await readConfig(db);
   const results: ScanResult[] = [];
+  const fresh: NewOffersBySearch = new Map();
   for (const search of config.searches) {
     for (const portal of search.portals) {
       const searchFn = PORTALS[portal];
@@ -92,12 +94,19 @@ async function runScan(db: SupabaseClient): Promise<ScanResult[]> {
       try {
         const offers = await searchFn(search.criteria);
         const matched = filterOffers(offers, search.criteria);
-        const newCount = await persistMatches(db, matched, search.name);
-        results.push({ searchName: search.name, portal, scraped: offers.length, matched: matched.length, new: newCount });
+        const added = await persistMatches(db, matched, search.name);
+        if (added.length > 0) fresh.set(search.name, [...(fresh.get(search.name) ?? []), ...added]);
+        results.push({ searchName: search.name, portal, scraped: offers.length, matched: matched.length, new: added.length });
       } catch (err) {
         results.push({ searchName: search.name, portal, scraped: 0, matched: 0, new: 0, error: (err as Error).message });
       }
     }
+  }
+  // Offers are already persisted, so a failed send is logged, not retried.
+  try {
+    await sendNewOffersEmail(fresh);
+  } catch (err) {
+    console.error("email notify failed:", (err as Error).message);
   }
   return results;
 }

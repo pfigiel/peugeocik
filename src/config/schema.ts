@@ -35,6 +35,7 @@ const notifierSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("console") }).strict(),
   z.object({ type: z.literal("logfile"), path: z.string().min(1) }).strict(),
   z.object({ type: z.literal("markdown"), path: z.string().min(1) }).strict(),
+  z.object({ type: z.literal("email") }).strict(),
 ]);
 
 export const configSchema = z

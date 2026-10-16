@@ -65,6 +65,23 @@ State (`data/matches.json`, `data/matches.md`) is git-ignored. Delete
 re-checks price/year/mileage/engine/fuel/gearbox client-side; body/damaged/
 registered/location are applied by the portal query.
 
+## Email alerts
+
+New matches are emailed as one digest per scan via [Resend](https://resend.com).
+Configured by env vars (Supabase function secrets for the cloud scan, process env
+for the local monitor with a `{ "type": "email" }` notifier):
+
+| var | purpose |
+|-----|---------|
+| `RESEND_API_KEY` | Resend API key |
+| `NOTIFY_EMAIL_TO` | recipients, comma-separated |
+| `NOTIFY_EMAIL_FROM` | sender, e.g. `peugeocik <alerty@twojadomena.pl>` (default `onboarding@resend.dev`) |
+
+Cloud: `npx supabase secrets set RESEND_API_KEY=... NOTIFY_EMAIL_TO=a@x.pl,b@y.pl NOTIFY_EMAIL_FROM="..."`.
+Missing key/recipients disables email; the scan still runs. With the default
+`onboarding@resend.dev` sender Resend only delivers to the account owner's
+address — verify a domain to email anyone else.
+
 ## HTTP API
 
 | method | path | purpose |
