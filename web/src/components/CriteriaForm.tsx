@@ -100,7 +100,7 @@ export function CriteriaForm({ config, meta, saving, onSave }: Props) {
       <Section title="Powiadomienia">
         <TagsInput
           label="Adresy e-mail odbiorców"
-          description="Każdy nowy wynik trafia na te adresy. Puste = adres domyślny (NOTIFY_EMAIL_TO)."
+          description="Każdy nowy wynik trafia na te adresy. Puste = brak powiadomień e-mail."
           placeholder="wpisz adres i Enter"
           value={notifyEmails}
           onChange={setNotifyEmails}

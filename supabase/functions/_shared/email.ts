@@ -1,14 +1,13 @@
 import type { Offer } from "./types.ts";
 
-// New-offer email alerts via Resend (https://resend.com). Configured by secrets:
-//   RESEND_API_KEY     Resend API key
-//   NOTIFY_EMAIL_FROM  sender, e.g. "peugeocik <alerty@twojadomena.pl>"
-//   NOTIFY_EMAIL_TO    fallback recipients, comma-separated (used only when
-//                      config.notifyEmails is empty)
+// New-offer email alerts via Brevo (https://brevo.com). Configured by secrets:
+//   BREVO_API_KEY      Brevo API key (v3)
+//   NOTIFY_EMAIL_FROM  verified sender, e.g. "peugeocik <ty@gmail.com>"
+// Recipients come solely from config.notifyEmails (edited in the app UI).
 // Unset key or no recipients disables email (scan still runs and persists).
 
-const RESEND_URL = "https://api.resend.com/emails";
-const DEFAULT_FROM = "peugeocik <onboarding@resend.dev>";
+const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
+const DEFAULT_FROM = "peugeocik <no-reply@example.com>";
 
 const LABELS: Record<string, string> = {
   petrol: "Benzyna",
@@ -25,17 +24,23 @@ const label = (v: string | null) => (v ? LABELS[v] ?? v : null);
 /** Fresh offers grouped by the search that matched them. */
 export type NewOffersBySearch = Map<string, Offer[]>;
 
-interface EmailConfig { apiKey: string; from: string; to: string[] }
+interface Sender { name: string; email: string }
+interface EmailConfig { apiKey: string; from: Sender; to: string[] }
 
-/** Recipients come from config (`notifyEmails`); when empty, fall back to the
- *  NOTIFY_EMAIL_TO secret. API key and sender are always secrets. */
+/** Parse "Name <email>" (or a bare address) into a Brevo sender object. */
+function parseSender(raw: string): Sender {
+  const m = raw.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (m) return { name: m[1] || "peugeocik", email: m[2].trim() };
+  return { name: "peugeocik", email: raw.trim() };
+}
+
+/** Recipients come solely from config (`notifyEmails`); empty disables email.
+ *  API key and sender are secrets. */
 function emailConfig(recipients: string[]): EmailConfig | null {
-  const apiKey = Deno.env.get("RESEND_API_KEY") ?? "";
-  const to = recipients.length > 0
-    ? recipients
-    : (Deno.env.get("NOTIFY_EMAIL_TO") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const apiKey = Deno.env.get("BREVO_API_KEY") ?? "";
+  const to = recipients.map((s) => s.trim()).filter(Boolean);
   if (!apiKey || to.length === 0) return null;
-  return { apiKey, to, from: Deno.env.get("NOTIFY_EMAIL_FROM") || DEFAULT_FROM };
+  return { apiKey, to, from: parseSender(Deno.env.get("NOTIFY_EMAIL_FROM") || DEFAULT_FROM) };
 }
 
 const esc = (s: string) =>
@@ -100,11 +105,18 @@ export async function sendNewOffersEmail(bySearch: NewOffersBySearch, recipients
   const total = [...bySearch.values()].reduce((n, offers) => n + offers.length, 0);
   if (!cfg || total === 0) return false;
 
-  const res = await fetch(RESEND_URL, {
+  const { subject, html, text } = render(bySearch, total);
+  const res = await fetch(BREVO_URL, {
     method: "POST",
-    headers: { Authorization: `Bearer ${cfg.apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: cfg.from, to: cfg.to, ...render(bySearch, total) }),
+    headers: { "api-key": cfg.apiKey, "Content-Type": "application/json", accept: "application/json" },
+    body: JSON.stringify({
+      sender: cfg.from,
+      to: cfg.to.map((email) => ({ email })),
+      subject,
+      htmlContent: html,
+      textContent: text,
+    }),
   });
-  if (!res.ok) throw new Error(`resend: HTTP ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new Error(`brevo: HTTP ${res.status} ${await res.text()}`);
   return true;
 }
