@@ -112,7 +112,7 @@ async function notifyPending(db: SupabaseClient, config: Config): Promise<void> 
   for (const r of pending) {
     bySearch.set(r.search_name, [...(bySearch.get(r.search_name) ?? []), r.offer as Offer]);
   }
-  await sendNewOffersEmail(bySearch);
+  await sendNewOffersEmail(bySearch, config.notifyEmails);
 
   const now = new Date().toISOString();
   const uids = pending.map((r) => r.uid as string);

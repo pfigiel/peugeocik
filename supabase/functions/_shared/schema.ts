@@ -37,6 +37,8 @@ export const configSchema = z
     intervalMinutes: z.number().positive().default(30),
     // When true, the scheduled (cron) scan is skipped. Manual scans still run.
     paused: z.boolean().default(false),
+    // Email alert recipients. Empty = fall back to NOTIFY_EMAIL_TO secret.
+    notifyEmails: z.array(z.string().email()).default([]),
     searches: z.array(searchSchema).min(1),
   })
   .strict();

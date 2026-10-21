@@ -27,6 +27,7 @@ export interface SearchJob {
 export interface Config {
   intervalMinutes: number;
   paused?: boolean;
+  notifyEmails?: string[];
   searches: SearchJob[];
 }
 

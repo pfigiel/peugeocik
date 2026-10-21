@@ -3,8 +3,9 @@ import type { Offer } from "./types.ts";
 // New-offer email alerts via Resend (https://resend.com). Configured by secrets:
 //   RESEND_API_KEY     Resend API key
 //   NOTIFY_EMAIL_FROM  sender, e.g. "peugeocik <alerty@twojadomena.pl>"
-//   NOTIFY_EMAIL_TO    recipients, comma-separated
-// Unset key or recipients disables email (scan still runs and persists).
+//   NOTIFY_EMAIL_TO    fallback recipients, comma-separated (used only when
+//                      config.notifyEmails is empty)
+// Unset key or no recipients disables email (scan still runs and persists).
 
 const RESEND_URL = "https://api.resend.com/emails";
 const DEFAULT_FROM = "peugeocik <onboarding@resend.dev>";
@@ -26,9 +27,13 @@ export type NewOffersBySearch = Map<string, Offer[]>;
 
 interface EmailConfig { apiKey: string; from: string; to: string[] }
 
-function emailConfig(): EmailConfig | null {
+/** Recipients come from config (`notifyEmails`); when empty, fall back to the
+ *  NOTIFY_EMAIL_TO secret. API key and sender are always secrets. */
+function emailConfig(recipients: string[]): EmailConfig | null {
   const apiKey = Deno.env.get("RESEND_API_KEY") ?? "";
-  const to = (Deno.env.get("NOTIFY_EMAIL_TO") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const to = recipients.length > 0
+    ? recipients
+    : (Deno.env.get("NOTIFY_EMAIL_TO") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (!apiKey || to.length === 0) return null;
   return { apiKey, to, from: Deno.env.get("NOTIFY_EMAIL_FROM") || DEFAULT_FROM };
 }
@@ -90,8 +95,8 @@ function render(bySearch: NewOffersBySearch, total: number): { subject: string; 
 
 /** Send one digest email for all new offers of a scan. No-op when email is not
  *  configured or there is nothing new. Throws on Resend API failure. */
-export async function sendNewOffersEmail(bySearch: NewOffersBySearch): Promise<boolean> {
-  const cfg = emailConfig();
+export async function sendNewOffersEmail(bySearch: NewOffersBySearch, recipients: string[] = []): Promise<boolean> {
+  const cfg = emailConfig(recipients);
   const total = [...bySearch.values()].reduce((n, offers) => n + offers.length, 0);
   if (!cfg || total === 0) return false;
 

@@ -8,6 +8,7 @@ import {
   SimpleGrid,
   Stack,
   Switch,
+  TagsInput,
   TextInput,
   Title,
 } from "@mantine/core";
@@ -49,6 +50,7 @@ export function CriteriaForm({ config, meta, saving, onSave }: Props) {
   const [c, setC] = useState<Criteria>(search.criteria);
   const [city, setCity] = useState(search.criteria.location?.city ?? "");
   const [radius, setRadius] = useState<number | string>(search.criteria.location?.radiusKm ?? "");
+  const [notifyEmails, setNotifyEmails] = useState<string[]>(config.notifyEmails ?? []);
 
   const set = <K extends keyof Criteria>(key: K, value: Criteria[K]) => setC((p) => ({ ...p, [key]: value }));
 
@@ -57,6 +59,7 @@ export function CriteriaForm({ config, meta, saving, onSave }: Props) {
     onSave({
       ...config,
       intervalMinutes: Number(intervalMinutes) || config.intervalMinutes,
+      notifyEmails: notifyEmails.map((e) => e.trim()).filter(Boolean),
       searches: [{ ...search, criteria: { ...c, location } }],
     });
   };
@@ -92,6 +95,19 @@ export function CriteriaForm({ config, meta, saving, onSave }: Props) {
           <Switch label="Tylko nieuszkodzone" mt={{ base: 0, md: "xl" }} checked={!!c.excludeDamaged} onChange={(e) => set("excludeDamaged", e.currentTarget.checked || undefined)} />
           <Switch label="Zarejestrowany w PL" mt={{ base: 0, md: "xl" }} checked={!!c.registeredInPL} onChange={(e) => set("registeredInPL", e.currentTarget.checked || undefined)} />
         </SimpleGrid>
+      </Section>
+
+      <Section title="Powiadomienia">
+        <TagsInput
+          label="Adresy e-mail odbiorców"
+          description="Każdy nowy wynik trafia na te adresy. Puste = adres domyślny (NOTIFY_EMAIL_TO)."
+          placeholder="wpisz adres i Enter"
+          value={notifyEmails}
+          onChange={setNotifyEmails}
+          splitChars={[",", " ", ";"]}
+          clearable
+          styles={pillStyles}
+        />
       </Section>
 
       <Group justify="space-between" align="flex-end">
