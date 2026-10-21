@@ -22,7 +22,7 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-cron-secret",
-  "Access-Control-Allow-Methods": "GET, PUT, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS",
 };
 
 function json(status: number, body: unknown): Response {
@@ -212,6 +212,14 @@ Deno.serve(async (req) => {
         archived: r.archived ?? false,
       }));
       return json(200, records);
+    }
+
+    // Wipe every stored match. Used on a criteria change so the next scan
+    // repopulates from a clean slate instead of carrying stale offers.
+    if (path === "/matches" && method === "DELETE") {
+      const { error } = await admin.from("matches").delete().not("uid", "is", null);
+      if (error) return json(500, { error: error.message });
+      return json(200, { ok: true });
     }
 
     if (path === "/archive" && method === "POST") {

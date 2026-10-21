@@ -42,7 +42,14 @@ function Root() {
       setReady(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
+    // A 401 from the backend (expired session) clears auth in api.ts and fires
+    // this; drop to the login screen without waiting on supabase's own event.
+    const onSignout = () => setSession(null);
+    window.addEventListener("peugeocik:signout", onSignout);
+    return () => {
+      sub.subscription.unsubscribe();
+      window.removeEventListener("peugeocik:signout", onSignout);
+    };
   }, []);
 
   if (!ready) return <Center mih="100dvh"><Loader /></Center>;

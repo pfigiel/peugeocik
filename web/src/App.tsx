@@ -51,8 +51,10 @@ export function App({ session }: { session: Session }) {
     setError(null);
     try {
       setConfig(await api.saveConfig(next));
-      // Re-scan against the new criteria (no emails — manual scan path), then
-      // refresh the view so stale matches drop and newly-fitting offers appear.
+      // Criteria changed: prune every stored match, then re-scan (no emails —
+      // manual scan path) so results reflect only the new criteria.
+      await api.resetMatches();
+      setMatches([]);
       const res = await api.scan();
       setLastScan(res.results);
       setMatches(await api.getMatches());
