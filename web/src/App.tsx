@@ -50,7 +50,11 @@ export function App({ session }: { session: Session }) {
     setError(null);
     try {
       setConfig(await api.saveConfig(next));
-      setMatches(await api.getMatches()); // re-prune view against new criteria
+      // Re-scan against the new criteria (no emails — manual scan path), then
+      // refresh the view so stale matches drop and newly-fitting offers appear.
+      const res = await api.scan();
+      setLastScan(res.results);
+      setMatches(await api.getMatches());
     } catch (e) {
       setError((e as Error).message);
     } finally {

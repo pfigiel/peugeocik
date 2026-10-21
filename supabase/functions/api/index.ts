@@ -54,10 +54,16 @@ function matchesConfig(offer: Offer, config: Config): boolean {
   return config.searches.some((s) => s.portals.includes(offer.portal) && matches(offer, s.criteria));
 }
 
+/** Insert freshly-seen offers and bump last_seen_at on known ones.
+ *  `notify` decides whether fresh rows are emailable: a cron scan (notify=true)
+ *  inserts them with notified_at=null so the cron picks them up and emails them;
+ *  a manual / criteria-change scan (notify=false) stamps notified_at=now on
+ *  insert, so those offers refresh the view but are never emailed. */
 async function persistMatches(
   db: SupabaseClient,
   offers: Offer[],
   searchName: string,
+  notify: boolean,
 ): Promise<Offer[]> {
   if (offers.length === 0) return [];
   const uids = offers.map((o) => o.uid);
@@ -75,6 +81,7 @@ async function persistMatches(
       offer,
       first_seen_at: now,
       last_seen_at: now,
+      notified_at: notify ? null : now,
     }));
     const { error } = await db.from("matches").insert(rows);
     if (error) throw new Error(error.message);
@@ -86,10 +93,38 @@ async function persistMatches(
   return fresh;
 }
 
-async function runScan(db: SupabaseClient): Promise<ScanResult[]> {
+/** Email every pending (notified_at IS NULL) match that still fits the current
+ *  criteria and isn't archived, then stamp them notified_at=now. Only the cron
+ *  scan calls this, so manual/criteria-change scans never trigger emails. A
+ *  failed send leaves notified_at NULL, so the next cron retries it. */
+async function notifyPending(db: SupabaseClient, config: Config): Promise<void> {
+  const { data, error } = await db
+    .from("matches")
+    .select("uid, search_name, offer")
+    .is("notified_at", null)
+    .eq("archived", false);
+  if (error) throw new Error(error.message);
+
+  const pending = (data ?? []).filter((r) => matchesConfig(r.offer as Offer, config));
+  if (pending.length === 0) return;
+
+  const bySearch: NewOffersBySearch = new Map();
+  for (const r of pending) {
+    bySearch.set(r.search_name, [...(bySearch.get(r.search_name) ?? []), r.offer as Offer]);
+  }
+  await sendNewOffersEmail(bySearch);
+
+  const now = new Date().toISOString();
+  const uids = pending.map((r) => r.uid as string);
+  const { error: updErr } = await db.from("matches").update({ notified_at: now }).in("uid", uids);
+  if (updErr) throw new Error(updErr.message);
+}
+
+/** Scan all searches and persist matches. When `notify` (cron only), emails the
+ *  pending matches afterwards; manual/criteria-change scans pass notify=false. */
+async function runScan(db: SupabaseClient, notify: boolean): Promise<ScanResult[]> {
   const config = await readConfig(db);
   const results: ScanResult[] = [];
-  const fresh: NewOffersBySearch = new Map();
   for (const search of config.searches) {
     for (const portal of search.portals) {
       const searchFn = PORTALS[portal];
@@ -100,19 +135,20 @@ async function runScan(db: SupabaseClient): Promise<ScanResult[]> {
       try {
         const offers = await searchFn(search.criteria);
         const matched = filterOffers(offers, search.criteria);
-        const added = await persistMatches(db, matched, search.name);
-        if (added.length > 0) fresh.set(search.name, [...(fresh.get(search.name) ?? []), ...added]);
+        const added = await persistMatches(db, matched, search.name, notify);
         results.push({ searchName: search.name, portal, scraped: offers.length, matched: matched.length, new: added.length });
       } catch (err) {
         results.push({ searchName: search.name, portal, scraped: 0, matched: 0, new: 0, error: (err as Error).message });
       }
     }
   }
-  // Offers are already persisted, so a failed send is logged, not retried.
-  try {
-    await sendNewOffersEmail(fresh);
-  } catch (err) {
-    console.error("email notify failed:", (err as Error).message);
+  // Offers are already persisted, so a failed send is logged, not retried here.
+  if (notify) {
+    try {
+      await notifyPending(db, config);
+    } catch (err) {
+      console.error("email notify failed:", (err as Error).message);
+    }
   }
   return results;
 }
@@ -137,7 +173,7 @@ Deno.serve(async (req) => {
 
     // Cron may trigger a scan without a user, using the shared secret.
     if (path === "/scan" && method === "POST" && isCron) {
-      return json(200, { results: await runScan(admin) });
+      return json(200, { results: await runScan(admin, true) });
     }
 
     // Everything else requires a logged-in friend.
@@ -184,8 +220,9 @@ Deno.serve(async (req) => {
       return json(200, { uid: body.uid, archived: body.archived });
     }
 
+    // Manual scan from the app: refresh matches without sending emails.
     if (path === "/scan" && method === "POST") {
-      return json(200, { results: await runScan(admin) });
+      return json(200, { results: await runScan(admin, false) });
     }
 
     return json(404, { error: "Nieznany endpoint" });
