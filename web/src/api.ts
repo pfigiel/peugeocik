@@ -19,6 +19,9 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    // Stale/invalid session: sign out so the app falls back to the login screen
+    // instead of getting stuck on a dead session.
+    if (res.status === 401) await supabase.auth.signOut({ scope: "local" }).catch(() => {});
     throw new Error(body.error ?? `Błąd serwera (HTTP ${res.status})`);
   }
   return res.json() as Promise<T>;

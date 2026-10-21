@@ -173,6 +173,8 @@ Deno.serve(async (req) => {
 
     // Cron may trigger a scan without a user, using the shared secret.
     if (path === "/scan" && method === "POST" && isCron) {
+      const config = await readConfig(admin);
+      if (config.paused) return json(200, { results: [], paused: true });
       return json(200, { results: await runScan(admin, true) });
     }
 

@@ -45,6 +45,7 @@ export interface SearchJob {
 
 export interface Config {
   intervalMinutes: number;
+  paused?: boolean;
   searches: SearchJob[];
 }
 

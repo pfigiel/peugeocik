@@ -35,6 +35,8 @@ const searchSchema = z
 export const configSchema = z
   .object({
     intervalMinutes: z.number().positive().default(30),
+    // When true, the scheduled (cron) scan is skipped. Manual scans still run.
+    paused: z.boolean().default(false),
     searches: z.array(searchSchema).min(1),
   })
   .strict();

@@ -10,6 +10,7 @@ import {
   Paper,
   Select,
   Stack,
+  Switch,
   Tabs,
   Text,
   Title,
@@ -74,6 +75,19 @@ export function App({ session }: { session: Session }) {
     }
   };
 
+  const togglePaused = async (paused: boolean) => {
+    if (!config) return;
+    const prev = config;
+    const next = { ...config, paused };
+    setConfig(next); // optimistic
+    try {
+      setConfig(await api.saveConfig(next));
+    } catch (e) {
+      setConfig(prev); // revert
+      setError((e as Error).message);
+    }
+  };
+
   const scan = async () => {
     setScanning(true);
     setError(null);
@@ -99,11 +113,17 @@ export function App({ session }: { session: Session }) {
   if (!meta || !config) return <Group justify="center" mt={120}><Loader /></Group>;
 
   const portals = config.searches[0].portals.join(", ");
+  const newestSeen = matches.reduce<string | null>(
+    (max, m) => (!max || m.lastSeenAt > max ? m.lastSeenAt : max),
+    null,
+  );
   const lastScanText = lastScan
     ? "Ostatni skan: " + lastScan.map((r) =>
         r.error ? `${r.portal}: błąd` : `${r.portal} · ${r.scraped} pobrane · ${r.matched} dopasowane · ${r.new} nowych`,
       ).join(" · ")
-    : "Jeszcze nie skanowano — kliknij „Skanuj teraz”.";
+    : newestSeen
+      ? `${matches.length} zapisanych ofert — ostatnio widziane ${new Date(newestSeen).toLocaleString("pl-PL")}`
+      : "Jeszcze nie skanowano — kliknij „Skanuj teraz”.";
 
   return (
     <Container size="lg" py="lg">
@@ -127,7 +147,16 @@ export function App({ session }: { session: Session }) {
 
         {/* Last-scan bar */}
         <Paper radius="md" px="md" py="sm" style={{ background: "var(--mantine-color-dark-6)", border: "1px solid var(--mantine-color-dark-4)" }}>
-          <Text size="sm" c="dimmed">{lastScanText}</Text>
+          <Group justify="space-between" wrap="nowrap" gap="sm">
+            <Text size="sm" c="dimmed">{lastScanText}</Text>
+            <Switch
+              checked={!config.paused}
+              onChange={(e) => togglePaused(!e.currentTarget.checked)}
+              label="Auto-skan"
+              size="sm"
+              styles={{ label: { whiteSpace: "nowrap" } }}
+            />
+          </Group>
         </Paper>
 
         {error && <Alert color="red" withCloseButton onClose={() => setError(null)}>{error}</Alert>}
