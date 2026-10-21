@@ -29,6 +29,13 @@ function toInt(v: string | undefined): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
+/** otomoto fuel value -> our normalized value (same folding as OLX). */
+const FUEL_NORMALIZE: Record<string, string> = { "plugin-hybrid": "hybrid" };
+
+function normalizeFuel(v: string | undefined): string | null {
+  return v ? (FUEL_NORMALIZE[v] ?? v) : null;
+}
+
 function paramValue(params: RawParam[], key: string): string | undefined {
   return params.find((p) => p.key === key)?.value;
 }
@@ -46,10 +53,12 @@ function nodeToOffer(n: RawNode): Offer {
     currency: n.price?.amount?.currencyCode ?? null,
     year: toInt(paramValue(params, "year")),
     mileageKm: toInt(paramValue(params, "mileage")),
-    fuelType: paramValue(params, "fuel_type") ?? null,
+    fuelType: normalizeFuel(paramValue(params, "fuel_type")),
     gearbox: paramValue(params, "gearbox") ?? null,
     enginePowerHp: toInt(paramValue(params, "engine_power")),
     engineCapacityCm3: toInt(paramValue(params, "engine_capacity")),
+    make: paramValue(params, "make") ?? null,
+    model: paramValue(params, "model") ?? null,
     location: n.location?.city?.name ?? null,
     thumbnailUrl: n.thumbnail?.x2 ?? n.thumbnail?.x1 ?? null,
     createdAt: n.createdAt ?? null,

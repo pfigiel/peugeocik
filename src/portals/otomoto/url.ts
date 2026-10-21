@@ -30,14 +30,17 @@ const BODY_MAP: Record<string, string> = {
   cabriolet: "cabriolet",
 };
 
-/** Slugify a city name for the otomoto path (e.g. "Gliwice" -> "gliwice"). */
-function citySlug(city: string): string {
-  return city
-    .trim()
+/** Slugify for the otomoto path: "Alfa Romeo" -> "alfa-romeo", "Łódź" -> "lodz". */
+function slug(s: string | undefined): string | undefined {
+  const out = s
+    ?.trim()
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
-    .replace(/\s+/g, "-");
+    .replace(/ł/g, "l")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return out || undefined;
 }
 
 /**
@@ -49,9 +52,9 @@ export function buildSearchUrl(criteria: Criteria, page: number): string {
   // Path: /osobowe[/make[/model]][/city]
   const path = [
     BASE,
-    criteria.make,
-    criteria.model,
-    criteria.location?.city ? citySlug(criteria.location.city) : undefined,
+    slug(criteria.make),
+    slug(criteria.model),
+    slug(criteria.location?.city),
   ]
     .filter(Boolean)
     .join("/");

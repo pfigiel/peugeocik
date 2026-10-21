@@ -27,14 +27,26 @@ const BODY_MAP: Record<string, string> = {
   cabriolet: "cabriolet",
 };
 
+// otomoto fuel value -> our normalized value (same folding as OLX).
+const FUEL_NORMALIZE: Record<string, string> = { "plugin-hybrid": "hybrid" };
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function citySlug(city: string): string {
-  return city.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "-");
+/** Slugify for the otomoto path: "Alfa Romeo" -> "alfa-romeo", "Łódź" -> "lodz". */
+function slug(s: string | undefined): string | undefined {
+  const out = s
+    ?.trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/ł/g, "l")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return out || undefined;
 }
 
 function buildSearchUrl(criteria: Criteria, page: number): string {
-  const path = [BASE, criteria.make, criteria.model, criteria.location?.city ? citySlug(criteria.location.city) : undefined]
+  const path = [BASE, slug(criteria.make), slug(criteria.model), slug(criteria.location?.city)]
     .filter(Boolean)
     .join("/");
 
@@ -82,6 +94,10 @@ function toInt(v: string | undefined): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
+function normalizeFuel(v: string | undefined): string | null {
+  return v ? (FUEL_NORMALIZE[v] ?? v) : null;
+}
+
 function nodeToOffer(n: RawNode): Offer {
   const params = n.parameters ?? [];
   const pv = (key: string) => params.find((p) => p.key === key)?.value;
@@ -95,10 +111,12 @@ function nodeToOffer(n: RawNode): Offer {
     currency: n.price?.amount?.currencyCode ?? null,
     year: toInt(pv("year")),
     mileageKm: toInt(pv("mileage")),
-    fuelType: pv("fuel_type") ?? null,
+    fuelType: normalizeFuel(pv("fuel_type")),
     gearbox: pv("gearbox") ?? null,
     enginePowerHp: toInt(pv("engine_power")),
     engineCapacityCm3: toInt(pv("engine_capacity")),
+    make: pv("make") ?? null,
+    model: pv("model") ?? null,
     location: n.location?.city?.name ?? null,
     thumbnailUrl: n.thumbnail?.x2 ?? n.thumbnail?.x1 ?? null,
     createdAt: n.createdAt ?? null,

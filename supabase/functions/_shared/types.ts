@@ -14,6 +14,8 @@ export interface Offer {
   gearbox: string | null;
   enginePowerHp: number | null;
   engineCapacityCm3: number | null;
+  make?: string | null;
+  model?: string | null;
   location: string | null;
   thumbnailUrl: string | null;
   createdAt: string | null;
